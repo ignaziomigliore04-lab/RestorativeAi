@@ -16,58 +16,98 @@ st.set_page_config(page_title="Restorative AI", layout="wide")
 st.markdown(
     """
 <style>
+:root {
+    --bg-main: #f7f9ff;
+    --bg-soft: #eef4ff;
+    --bg-soft-2: #f6f3ff;
+    --card: #ffffff;
+    --line: #d9e4ff;
+    --line-soft: #e7ecf8;
+    --text-main: #111827;
+    --text-soft: #52607a;
+    --blue: #3b82f6;
+    --blue-deep: #2563eb;
+    --blue-soft: #e9f1ff;
+    --violet: #8b5cf6;
+    --violet-deep: #7c3aed;
+    --violet-soft: #f1ebff;
+    --shadow: 0 12px 30px rgba(76, 104, 180, 0.10);
+}
+html, body, [data-testid="stAppViewContainer"] {background: linear-gradient(180deg, #fbfcff 0%, #f3f7ff 58%, #f7f4ff 100%);}
+[data-testid="stHeader"] {background: rgba(255,255,255,0.72);}
 .block-container {padding-top: 1.1rem; padding-bottom: 2rem; max-width: 1380px;}
-.ra-hero {background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 55%, #0f766e 100%); color: white; border-radius: 24px; padding: 1.4rem 1.45rem; margin-bottom: 1rem; box-shadow: 0 12px 28px rgba(15,23,42,0.16);}
-.ra-card {background: white; border: 1px solid #e5e7eb; border-radius: 20px; padding: 1rem 1.1rem; margin-bottom: 0.9rem; box-shadow: 0 6px 16px rgba(15,23,42,0.06);}
-.feature-card {background: linear-gradient(180deg,#ffffff 0%,#f8fbff 100%); border: 1px solid #e2e8f0; border-radius: 24px; padding: 1.2rem 1.2rem; min-height: 180px; box-shadow: 0 10px 24px rgba(15,23,42,0.07); position:relative; overflow:hidden;}
-.feature-card:before {content:''; position:absolute; inset:0 auto auto 0; width:100%; height:4px; background:linear-gradient(90deg,#2563eb,#0f766e);}
-.feature-icon {width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center; background:#eff6ff; border:1px solid #bfdbfe; font-size:1.55rem; margin-bottom:0.8rem;}
-.feature-title {font-size: 1.12rem; font-weight: 700; margin-bottom: 0.45rem; color: #0f172a;}
-.feature-copy {color: #475569; line-height: 1.6; font-size: 0.98rem;}
-.index-panel {background:linear-gradient(180deg,#f8fbff,#ffffff); border:1px solid #dbeafe; border-radius:22px; padding:1.05rem 1.1rem; box-shadow:0 8px 20px rgba(15,23,42,0.06);}
-.index-row {padding:0.7rem 0; border-bottom:1px solid #e5e7eb;}
+.ra-hero {background: radial-gradient(circle at top left, rgba(139,92,246,0.18), transparent 28%), linear-gradient(135deg, #f7f1ff 0%, #efe7ff 36%, #ecf2ff 72%, #ffffff 100%); color: var(--text-main); border: 1px solid #d9ccff; border-radius: 34px; padding: 1.8rem 1.8rem; margin-bottom: 1rem; box-shadow: 0 18px 40px rgba(124, 58, 237, 0.15);}
+.ra-card {background: var(--card); border: 1px solid var(--line-soft); border-radius: 24px; padding: 1rem 1.1rem; margin-bottom: 0.9rem; box-shadow: var(--shadow);}
+.feature-card {background: linear-gradient(180deg,#ffffff 0%,#faf7ff 48%,#f5f9ff 100%); border: 1px solid #e6ddff; border-radius: 28px; padding: 1.2rem 1.2rem; min-height: 190px; box-shadow: var(--shadow); position:relative; overflow:hidden;}
+.feature-card:before {content:''; position:absolute; inset:0 auto auto 0; width:100%; height:4px; background:linear-gradient(90deg,var(--violet),var(--blue));}
+.feature-icon {width:54px; height:54px; border-radius:18px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#f0e9ff,#eaf0ff); border:1px solid #ddd2ff; font-size:1.55rem; margin-bottom:0.8rem;}
+.feature-title {font-size: 1.12rem; font-weight: 800; margin-bottom: 0.45rem; color: var(--text-main);}
+.feature-copy {color: var(--text-soft); line-height: 1.6; font-size: 0.98rem;}
+.index-panel {background:linear-gradient(180deg,#ffffff,#f7faff 55%,#f7f3ff 100%); border:1px solid var(--line); border-radius:24px; padding:1.05rem 1.1rem; box-shadow:var(--shadow);}
+.index-row {padding:0.7rem 0; border-bottom:1px solid #edf1fa;}
 .index-row:last-child {border-bottom:none;}
-.index-name {font-weight:800; color:#0f172a;}
-.index-copy {color:#475569; font-size:0.93rem; line-height:1.45;}
+.index-name {font-weight:800; color:var(--text-main);}
+.index-copy {color:var(--text-soft); font-size:0.93rem; line-height:1.45;}
 .cta-button-wrap {text-align:center; margin-top:1.15rem;}
-.output-mini {background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:0.8rem 0.9rem; margin-bottom:0.65rem;}
-.result-top {background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%); border: 1px solid #dbeafe; border-radius: 22px; padding: 1rem 1.1rem; box-shadow: 0 6px 16px rgba(15,23,42,0.06);}
-.reason-box {background: #f8fafc; border-left: 5px solid #1d4ed8; border-radius: 12px; padding: 0.8rem 0.9rem; margin-bottom: 0.7rem;}
+.output-mini {background:linear-gradient(180deg,#ffffff,#f8fbff); border:1px solid var(--line-soft); border-radius:16px; padding:0.8rem 0.9rem; margin-bottom:0.65rem;}
+.result-top {background: linear-gradient(180deg, #ffffff 0%, #f7fbff 55%, #f8f4ff 100%); border: 1px solid var(--line); border-radius: 24px; padding: 1rem 1.1rem; box-shadow: var(--shadow);}
+.reason-box {background: #fafcff; border-left: 5px solid var(--violet); border-radius: 12px; padding: 0.8rem 0.9rem; margin-bottom: 0.7rem;}
 .sem-card {border-radius: 18px; padding: 0.95rem 1rem; margin-bottom: 0.7rem; border: 1px solid transparent;}
 .sem-green {background: #f0fdf4; border-color: #86efac;}
 .sem-yellow {background: #fffbeb; border-color: #fde68a;}
 .sem-red {background: #fef2f2; border-color: #fca5a5;}
-.small-muted {color: #475569; font-size: 0.93rem; line-height: 1.5;}
-.radar-note {background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:0.9rem 1rem; margin-bottom:0.75rem;}
-.idx-chip {display:inline-block; padding:0.3rem 0.65rem; border-radius:999px; background:#eff6ff; border:1px solid #bfdbfe; margin-right:0.35rem; margin-bottom:0.35rem; font-size:0.85rem;}
-.section-title {font-size: 2.55rem; text-align: center; font-weight: 800; color: #0f172a; margin-top: 0.8rem;}
-.section-subtitle {font-size: 1.07rem; text-align: center; color: #64748b; max-width: 760px; margin: 0 auto 1.3rem auto; line-height: 1.55;}
+.small-muted {color: var(--text-soft); font-size: 0.93rem; line-height: 1.55;}
+.radar-note {background:linear-gradient(180deg,#ffffff,#f8fbff); border:1px solid var(--line-soft); border-radius:16px; padding:0.9rem 1rem; margin-bottom:0.75rem;}
+.idx-chip {display:inline-block; padding:0.3rem 0.65rem; border-radius:999px; background:linear-gradient(135deg,#eef4ff,#f2ecff); border:1px solid var(--line); margin-right:0.35rem; margin-bottom:0.35rem; font-size:0.85rem;}
+.section-title {font-size: 2.55rem; text-align: center; font-weight: 800; color: var(--text-main); margin-top: 0.8rem;}
+.section-subtitle {font-size: 1.07rem; text-align: center; color: var(--text-soft); max-width: 760px; margin: 0 auto 1.3rem auto; line-height: 1.55;}
 .cta-wrap {text-align:center; margin: 1.1rem 0 0.5rem 0;}
-
-.app-tag {display:inline-block; padding:0.28rem 0.62rem; border-radius:999px; background:#e0ecff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:0.83rem; font-weight:700; margin-bottom:0.35rem;}
-.result-shell {background: linear-gradient(180deg,#ffffff 0%,#f8fbff 100%); border:1px solid #dbeafe; border-radius:26px; padding:1.15rem 1.2rem; box-shadow:0 14px 30px rgba(15,23,42,0.08);}
-.result-image-card {background:white; border:1px solid #e5e7eb; border-radius:24px; padding:0.8rem; box-shadow:0 10px 24px rgba(15,23,42,0.07);} 
-.result-summary-card {background:linear-gradient(180deg,#fcfdff,#f8fbff); border:1px solid #dbeafe; border-radius:24px; padding:1.05rem 1.1rem; min-height:100%; box-shadow:0 10px 24px rgba(15,23,42,0.07);} 
-.result-kicker {font-size:0.82rem; color:#2563eb; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.35rem;}
-.result-main-title {font-size:2rem; color:#0f172a; font-weight:800; margin:0 0 0.35rem 0; line-height:1.15;} 
-.result-subtitle {color:#475569; font-size:0.98rem; line-height:1.55; margin-bottom:0.7rem;} 
-.premium-metric {background:white; border:1px solid #e5e7eb; border-radius:20px; padding:0.95rem 1rem; box-shadow:0 8px 18px rgba(15,23,42,0.06); min-height:98px;} 
-.premium-metric-label {font-size:0.86rem; color:#64748b; margin-bottom:0.4rem;} 
-.premium-metric-value {font-size:1.72rem; color:#0f172a; font-weight:800; line-height:1.1;} 
-.premium-metric-note {font-size:0.84rem; color:#475569; margin-top:0.35rem;} 
-.premium-panel {background:white; border:1px solid #e5e7eb; border-radius:22px; padding:1rem 1.05rem; box-shadow:0 10px 24px rgba(15,23,42,0.06); height:100%;}
-.premium-panel-title {font-size:1.02rem; font-weight:800; color:#0f172a; margin-bottom:0.65rem;} 
+.app-tag {display:inline-block; padding:0.30rem 0.68rem; border-radius:999px; background:linear-gradient(135deg,#efe7ff,#f5efff); color:var(--violet-deep); border:1px solid #ddd2ff; font-size:0.83rem; font-weight:700; margin-bottom:0.35rem;}
+.result-shell {background: linear-gradient(180deg,#ffffff 0%,#f8fbff 55%,#f8f4ff 100%); border:1px solid var(--line); border-radius:26px; padding:1.15rem 1.2rem; box-shadow:var(--shadow);}
+.result-image-card {background:white; border:1px solid var(--line-soft); border-radius:26px; padding:0.85rem; box-shadow:var(--shadow);} 
+.result-summary-card {background: radial-gradient(circle at top right, rgba(139,92,246,0.12), transparent 25%), linear-gradient(180deg,#ffffff,#f8fbff 55%,#f7f1ff 100%); border:1px solid #ddd2ff; border-radius:28px; padding:1.05rem 1.1rem; min-height:100%; box-shadow:var(--shadow);} 
+.result-kicker {font-size:0.82rem; color:var(--violet-deep); font-weight:800; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.35rem;}
+.result-main-title {font-size:2rem; color:var(--text-main); font-weight:800; margin:0 0 0.35rem 0; line-height:1.15;} 
+.result-subtitle {color:var(--text-soft); font-size:0.98rem; line-height:1.55; margin-bottom:0.7rem;} 
+.premium-metric {background:linear-gradient(180deg,#ffffff,#fbfcff 55%,#faf6ff 100%); border:1px solid #e7defe; border-radius:22px; padding:0.95rem 1rem; box-shadow:var(--shadow); min-height:98px;} 
+.premium-metric-label {font-size:0.86rem; color:var(--text-soft); margin-bottom:0.4rem;} 
+.premium-metric-value {font-size:1.72rem; color:var(--text-main); font-weight:800; line-height:1.1;} 
+.premium-metric-note {font-size:0.84rem; color:var(--text-soft); margin-top:0.35rem;} 
+.premium-panel {background:linear-gradient(180deg,#ffffff,#fcfcff 55%,#faf6ff 100%); border:1px solid #e7defe; border-radius:24px; padding:1rem 1.05rem; box-shadow:var(--shadow); height:100%;}
+.premium-panel-title {font-size:1.02rem; font-weight:800; color:var(--text-main); margin-bottom:0.65rem;} 
 .premium-list {margin:0; padding-left:1.1rem; color:#334155;} .premium-list li {margin-bottom:0.48rem; line-height:1.45;} 
-.chart-shell {background:white; border:1px solid #e5e7eb; border-radius:24px; padding:1rem 1rem 0.7rem 1rem; box-shadow:0 10px 24px rgba(15,23,42,0.06);} 
-.section-kicker {font-size:0.84rem; color:#2563eb; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.2rem;} 
-.expander-label {font-weight:700; color:#0f172a;} 
-.material-chip {display:inline-block; padding:0.28rem 0.55rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:999px; font-size:0.82rem; color:#334155; margin-right:0.35rem; margin-bottom:0.35rem;} 
-.home-grid-shell {background:linear-gradient(180deg,#ffffff,#f8fbff); border:1px solid #e2e8f0; border-radius:28px; padding:1rem 1rem 0.4rem 1rem; box-shadow:0 12px 28px rgba(15,23,42,0.07);} 
-.home-side-shell {background:linear-gradient(180deg,#f8fbff,#ffffff); border:1px solid #dbeafe; border-radius:28px; padding:1.1rem 1.15rem; box-shadow:0 12px 28px rgba(15,23,42,0.07);} 
-.home-stat-card {background:white; border:1px solid #e2e8f0; border-radius:18px; padding:0.8rem 0.9rem; box-shadow:0 8px 20px rgba(15,23,42,0.05); margin-bottom:0.7rem;} 
-.takeaway-shell {background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 70%,#0f766e 100%); color:white; border-radius:24px; padding:1.05rem 1.15rem; box-shadow:0 16px 34px rgba(15,23,42,0.18);} 
+.chart-shell {background:linear-gradient(180deg,#ffffff,#fcfcff 48%,#faf6ff 100%); border:1px solid #e7defe; border-radius:26px; padding:1rem 1rem 0.7rem 1rem; box-shadow:var(--shadow);} 
+.section-kicker {font-size:0.84rem; color:var(--violet-deep); font-weight:800; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.2rem;} 
+.expander-label {font-weight:700; color:var(--text-main);} 
+.material-chip {display:inline-block; padding:0.28rem 0.55rem; background:linear-gradient(135deg,#eef4ff,#f2ecff); border:1px solid var(--line); border-radius:999px; font-size:0.82rem; color:#334155; margin-right:0.35rem; margin-bottom:0.35rem;} 
+.home-grid-shell {background:linear-gradient(180deg,#ffffff,#f8f4ff 40%,#f5f8ff 100%); border:1px solid #e5dcff; border-radius:28px; padding:1rem 1rem 0.4rem 1rem; box-shadow:var(--shadow);} 
+.home-side-shell {background:linear-gradient(180deg,#ffffff,#f7f3ff 45%,#eef4ff 100%); border:1px solid #ddd2ff; border-radius:28px; padding:1.1rem 1.15rem; box-shadow:var(--shadow);} 
+.home-stat-card {background:white; border:1px solid var(--line-soft); border-radius:18px; padding:0.8rem 0.9rem; box-shadow:0 8px 20px rgba(76, 104, 180, 0.06); margin-bottom:0.7rem;} 
+.takeaway-shell {background: linear-gradient(135deg, #f2eaff 0%, #eef4ff 58%, #ffffff 100%); color: var(--text-main); border:1px solid #ddd2ff; border-radius:24px; padding:1.05rem 1.15rem; box-shadow:var(--shadow);} 
 .takeaway-title {font-size:1.04rem; font-weight:800; margin-bottom:0.45rem;} 
-.takeaway-copy {font-size:0.97rem; line-height:1.6; opacity:0.97;} 
+.takeaway-copy {font-size:0.97rem; line-height:1.6; color: var(--text-soft);} 
+.stButton > button, div[data-testid="stDownloadButton"] > button {background: linear-gradient(135deg, var(--blue) 0%, var(--violet) 100%); color: white; border: none; border-radius: 999px; padding: 0.62rem 1.15rem; font-weight: 700; box-shadow: 0 10px 22px rgba(97, 96, 255, 0.20);} 
+.stButton > button:hover, div[data-testid="stDownloadButton"] > button:hover {background: linear-gradient(135deg, var(--blue-deep) 0%, var(--violet-deep) 100%); color:white;}
+.stRadio > div {background: rgba(255,255,255,0.72); border:1px solid var(--line-soft); border-radius: 999px; padding: 0.25rem 0.45rem;}
+div[data-testid="stDataFrame"], div[data-testid="stTable"] {border-radius: 18px; overflow:hidden;}
+.hero-purple-note {color:#6d28d9; font-weight:700;}
+
+.hero-grid {display:grid; grid-template-columns: 1.2fr 0.8fr; gap:1rem; align-items:center;}
+.hero-badge {display:inline-block; padding:0.34rem 0.72rem; border-radius:999px; background:linear-gradient(135deg,#f2eaff,#ecefff); border:1px solid #ddd2ff; color:#6d28d9; font-weight:700; font-size:0.82rem; margin-bottom:0.55rem;}
+.hero-title {font-size:3rem; line-height:1.02; font-weight:800; color:var(--text-main); margin:0.15rem 0 0.5rem 0;}
+.hero-title span {background:linear-gradient(135deg,#6d28d9,#2563eb); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;}
+.hero-copy {font-size:1.03rem; line-height:1.65; color:var(--text-soft); max-width:720px;}
+.hero-chip-row {margin-top:0.9rem;}
+.hero-chip {display:inline-block; padding:0.34rem 0.7rem; border-radius:999px; background:rgba(255,255,255,0.82); border:1px solid #ddd2ff; color:#4b5563; font-size:0.84rem; margin-right:0.4rem; margin-bottom:0.45rem;}
+.hero-side-card {background:linear-gradient(180deg,rgba(255,255,255,0.92),rgba(247,241,255,0.94)); border:1px solid #ddd2ff; border-radius:26px; padding:1rem 1.05rem; box-shadow:0 10px 24px rgba(124,58,237,0.10);} 
+.hero-mini {background:white; border:1px solid #e8e0ff; border-radius:18px; padding:0.7rem 0.8rem; margin-bottom:0.55rem;}
+.hero-mini-label {font-size:0.8rem; color:var(--text-soft);}
+.hero-mini-value {font-size:1.15rem; font-weight:800; color:#6d28d9;}
+.hero-mini-copy {font-size:0.84rem; color:var(--text-soft);}
+.result-main-title {font-size:2.08rem; color:var(--text-main); font-weight:800; margin:0 0 0.35rem 0; line-height:1.1;} 
+.result-main-title span {background:linear-gradient(135deg,#6d28d9,#2563eb); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;}
+.section-title {font-size: 2.65rem; text-align: center; font-weight: 800; color: var(--text-main); margin-top: 0.8rem;}
+@media (max-width: 900px) {.hero-grid {grid-template-columns:1fr;}}
 
 </style>
 """,
@@ -201,6 +241,75 @@ def class_comparison_table(ranked: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(cols)
 
 
+def material_class_reason(case, idx, top_row, row) -> str:
+    if row["primary_class_name"] == top_row["primary_class_name"]:
+        return "Classe scelta: miglior equilibrio complessivo per restauro, struttura, funzione e workflow del caso."
+
+    score = float(row["final_score"])
+    prefix = "Possibile con limiti: " if score >= 65 else "Non indicata: "
+    reasons = []
+
+    # mismatch diretto/indiretto
+    if row["direct_or_indirect"] != top_row["direct_or_indirect"]:
+        if top_row["direct_or_indirect"] == "Indirect":
+            reasons.append("la classe diretta è meno coerente con la necessità di protezione strutturale/cuspidale")
+        else:
+            reasons.append("la classe indiretta è più invasiva o meno necessaria rispetto alla scelta conservativa")
+
+    # structural and functional deficits
+    if float(row.get("structural_fit", 0)) + 8 < float(top_row.get("structural_fit", 0)):
+        reasons.append("fit biomeccanico inferiore rispetto alla classe prescelta")
+    if idx.fsi >= 0.65 and float(row.get("structural_fit", 0)) < 70:
+        reasons.append("meno indicata con carico funzionale/parafunzione elevati")
+
+    # biological / adhesive context
+    if float(row.get("bio_fit", 0)) + 8 < float(top_row.get("bio_fit", 0)):
+        reasons.append("compatibilità biologico-adesiva più debole")
+    if idx.bri >= 0.65 and float(row.get("bio_fit", 0)) < 65:
+        reasons.append("penalizzata dal contesto biologico o dall'isolamento")
+
+    # esthetic profile
+    if idx.edi >= 0.65 and float(row.get("esthetic_fit", 0)) + 8 < float(top_row.get("esthetic_fit", 0)):
+        reasons.append("resa estetica meno coerente con la richiesta del caso")
+
+    # workflow
+    if float(row.get("workflow_fit", 0)) + 8 < float(top_row.get("workflow_fit", 0)):
+        reasons.append("workflow meno compatibile con sedute, budget o accettazione del piano")
+    if case["indirect_acceptance"] == "No" and row["direct_or_indirect"] == "Indirect":
+        reasons.append("limitata dall'accettazione sfavorevole del restauro indiretto")
+
+    # evidence/data quality
+    if float(row.get("evidence_score", 0)) + 10 < float(top_row.get("evidence_score", 0)):
+        reasons.append("supporto documentale meno forte nel database")
+
+    if not reasons:
+        score_gap = float(top_row["final_score"]) - score
+        if score_gap < 6:
+            reasons.append("resta una seconda scelta discutibile, ma con vantaggio minore rispetto alla classe top")
+        else:
+            reasons.append("score globale inferiore per equilibrio meno favorevole tra i principali criteri clinici")
+
+    return prefix + "; ".join(reasons[:2]) + "."
+
+
+def class_comparison_table_with_reasons(ranked: pd.DataFrame, case, idx, top_row) -> pd.DataFrame:
+    cols=[]
+    dedup = ranked.drop_duplicates(subset=["primary_class_name"], keep="first").head(6)
+    for _, row in dedup.iterrows():
+        icon, _, status = semaforo(float(row["final_score"]))
+        cols.append({
+            "Semaforo": icon,
+            "Esito": status,
+            "Classe": row["primary_class_name"],
+            "Esempio": row["display_name"],
+            "Score": round(float(row["final_score"]),1),
+            "PSS": round(float(row["pss"]),1),
+            "Tipo": row["direct_or_indirect"],
+            "Motivo clinico": material_class_reason(case, idx, top_row, row),
+        })
+    return pd.DataFrame(cols)
+
+
 def direct_output_points(case, top_rest, top_material, ranked):
     points=[]
     points.append(f"Restauro indicato: {top_rest['restoration']}.")
@@ -232,6 +341,66 @@ def restoration_reasoning(case, indices, top_rest_row):
     if case["indirect_acceptance"] == "No":
         reasons.append("Le preferenze del paziente limitano il ventaglio delle opzioni indirette.")
     return list(dict.fromkeys(reasons))[:4]
+
+
+def restoration_alternative_reason(case, idx, selected_restoration: str, option_restoration: str, option_score: float) -> str:
+    if option_restoration == selected_restoration:
+        return "È la soluzione con il miglior equilibrio complessivo per questo caso."
+
+    structural_severe = idx.ssi >= 0.65
+    functional_high = idx.fsi >= 0.65
+    biologic_high = idx.bri >= 0.65
+    cuspal_need = case["cusp_loss"] == "Sì" or int(case["involved_cusps"]) >= 2
+    conservative_case = idx.ssi < 0.45 and int(case["residual_walls"]) >= 3 and case["endo_treated"] == "No"
+
+    if option_score >= 65:
+        prefix = "Possibile con limiti: "
+    else:
+        prefix = "Non indicato: "
+
+    if option_restoration == "Restauro diretto in composito":
+        if structural_severe or cuspal_need:
+            return prefix + "non offre una protezione cuspidale e strutturale sufficiente rispetto alla soluzione prescelta."
+        if functional_high:
+            return prefix + "il carico funzionale previsto rende la soluzione diretta meno affidabile della scelta top."
+        if selected_restoration != "Restauro diretto in composito":
+            return prefix + "risulta meno protettivo della soluzione indiretta selezionata."
+
+    if option_restoration == "Inlay":
+        if cuspal_need or structural_severe:
+            return prefix + "la perdita cuspidale o la compromissione strutturale richiedono più copertura di quella offerta da un inlay."
+        if selected_restoration in ["Onlay", "Overlay", "Corona completa"]:
+            return prefix + "è più conservativo ma meno protettivo rispetto al restauro selezionato."
+        if case["indirect_acceptance"] == "No":
+            return prefix + "il paziente non accetta facilmente una soluzione indiretta."
+
+    if option_restoration == "Onlay":
+        if selected_restoration == "Overlay" and (int(case["involved_cusps"]) >= 3 or structural_severe):
+            return prefix + "fornisce una copertura più limitata rispetto all'overlay scelto."
+        if selected_restoration == "Corona completa" and (case["endo_treated"] == "Sì" or case["coronal_tissue"] in ["25-50%", "<25%"]):
+            return prefix + "può risultare meno protettivo di una corona completa nel livello di compromissione attuale."
+        if case["indirect_acceptance"] == "No":
+            return prefix + "resta condizionato dall'accettazione dell'indiretto."
+
+    if option_restoration == "Overlay":
+        if conservative_case and selected_restoration in ["Restauro diretto in composito", "Inlay"]:
+            return prefix + "offrirebbe una copertura eccessiva rispetto alla struttura residua presente."
+        if selected_restoration == "Corona completa" and case["endo_treated"] == "Sì" and case["coronal_tissue"] == "<25%":
+            return prefix + "può risultare meno stabile di una corona completa nel caso specifico."
+        if case["indirect_acceptance"] == "No":
+            return prefix + "è frenato dai vincoli operativi e di accettazione del piano."
+
+    if option_restoration == "Corona completa":
+        if conservative_case or (case["vitality"] == "Vitale" and int(case["residual_walls"]) >= 3 and idx.ssi < 0.55):
+            return prefix + "sarebbe più invasiva del necessario rispetto alla soluzione prescelta."
+        if selected_restoration in ["Onlay", "Overlay"]:
+            return prefix + "può essere presa in considerazione, ma comporta un sacrificio tissutale maggiore."
+
+    if biologic_high and option_restoration != selected_restoration:
+        return prefix + "il contesto biologico/adesivo penalizza questa opzione rispetto alla scelta top."
+    if functional_high and option_restoration != selected_restoration:
+        return prefix + "il carico funzionale riduce l'affidabilità relativa di questa alternativa."
+    return prefix + "ha uno score inferiore perché meno coerente con il profilo strutturale, biologico e operativo del caso."
 
 
 
@@ -320,9 +489,35 @@ def render_home():
     st.markdown(
         """
 <div class='ra-hero'>
-  <div style='font-size:0.84rem; opacity:0.9;'>Clinical decision support • restorative dentistry • database-driven</div>
-  <h1 style='margin:0.15rem 0 0.35rem 0;'>🦷 Restorative AI</h1>
-  <div style='font-size:1rem; opacity:0.95;'>Sistema di supporto decisionale clinico per l'odontoiatria restaurativa. Integra dati strutturali, biologici, funzionali, estetici e operativi per suggerire il tipo di restauro e la classe di materiale più appropriati.</div>
+  <div class='hero-grid'>
+    <div>
+      <div class='hero-badge'>AI-powered restorative decision support</div>
+      <div class='hero-title'>Restorative <span>AI</span></div>
+      <div class='hero-copy'>Sistema di supporto decisionale clinico per l'odontoiatria restaurativa. Integra dati strutturali, biologici, funzionali, estetici e operativi per suggerire il tipo di restauro e la classe di materiale più appropriati.</div>
+      <div class='hero-chip-row'>
+        <span class='hero-chip'>5 clinical indices</span>
+        <span class='hero-chip'>Database-driven engine</span>
+        <span class='hero-chip'>Interpretable output</span>
+      </div>
+    </div>
+    <div class='hero-side-card'>
+      <div class='hero-mini'>
+        <div class='hero-mini-label'>Output principale</div>
+        <div class='hero-mini-value'>Restauro + Classe</div>
+        <div class='hero-mini-copy'>Decisione restaurativa sintetica e difendibile.</div>
+      </div>
+      <div class='hero-mini'>
+        <div class='hero-mini-label'>Decision engine</div>
+        <div class='hero-mini-value'>SSI • BRI • FSI • EDI • WCI</div>
+        <div class='hero-mini-copy'>La scelta nasce dall'integrazione di struttura, biologia, funzione, estetica e workflow.</div>
+      </div>
+      <div class='hero-mini'>
+        <div class='hero-mini-label'>Orientamento clinico</div>
+        <div class='hero-mini-value'>Direct → Indirect</div>
+        <div class='hero-mini-copy'>Confronto semaforico e radar chart del caso sempre leggibili.</div>
+      </div>
+    </div>
+  </div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -551,7 +746,7 @@ def render_clinical_page():
     with hero_right:
         st.markdown("<div class='result-summary-card'>", unsafe_allow_html=True)
         st.markdown(f"<div class='result-kicker'>{restoration_type_label(top_rest['restoration'])}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='result-main-title'>{top_rest['restoration']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='result-main-title'><span>{top_rest['restoration']}</span></div>", unsafe_allow_html=True)
         st.markdown(f"<div class='result-subtitle'><strong>Classe materiale consigliata:</strong> {top_material['primary_class_name']}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='{rest_css} sem-card'><strong>{rest_icon} {rest_status}</strong><br/>Decisione restaurativa principale per il caso clinico inserito.</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='{mat_css} sem-card'><strong>{mat_icon} {mat_status}</strong><br/>Classe materiale con miglior equilibrio tra struttura, biologia, funzione, estetica e workflow.</div>", unsafe_allow_html=True)
@@ -630,23 +825,31 @@ def render_clinical_page():
             st.markdown(f"- {bullet}")
 
     with st.expander("Confronto classi materiali", expanded=True):
-        class_table = class_comparison_table(ranked)
+        class_table = class_comparison_table_with_reasons(ranked, case, idx, top_material)
         st.dataframe(class_table, use_container_width=True, hide_index=True)
-        st.caption("Verde = scelta raccomandata. Giallo = utilizzabile con limiti. Rosso = poco sensata nel caso inserito.")
+        st.caption("Verde = classe raccomandata. Giallo = utilizzabile con limiti clinici. Rosso = poco sensata nel caso inserito, con motivazione esplicitata.")
 
     with st.expander("Confronto tipi di restauro", expanded=False):
+        view = rest_df.head(5).copy()
+        view["Semaforo"] = view["score"].apply(lambda x: semaforo(float(x))[0])
+        view["Esito"] = view["score"].apply(lambda x: semaforo(float(x))[2])
+        view["Motivo clinico"] = view.apply(lambda r: restoration_alternative_reason(case, idx, top_rest["restoration"], r["restoration"], float(r["score"])), axis=1)
+        st.dataframe(view[["Semaforo","Esito","restoration","score","Motivo clinico"]].rename(columns={"restoration":"Restauro","score":"Score"}), use_container_width=True, hide_index=True)
+
         s_cols = st.columns(min(5, len(rest_df)))
-        for i, (_, row) in enumerate(rest_df.head(5).iterrows()):
+        for i, (_, row) in enumerate(view.iterrows()):
             icon, css, status = semaforo(float(row["score"]))
+            reason = row["Motivo clinico"]
             with s_cols[i]:
-                st.markdown(f"<div class='{css} sem-card'><strong>{icon} {row['restoration']}</strong><br/>{status}<br/><span class='small-muted'>{row['rationale']}</span><br/><strong>Score:</strong> {row['score']:.1f}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='{css} sem-card'><strong>{icon} {row['restoration']}</strong><br/>{status}<br/><span class='small-muted'>{reason}</span><br/><strong>Score:</strong> {row['score']:.1f}</div>", unsafe_allow_html=True)
 
     with st.expander("Dettaglio materiali (solo come esempi)", expanded=False):
         table = ranked.head(5).copy()
         table["Semaforo"] = table["final_score"].apply(lambda x: semaforo(float(x))[0])
         table["Esito"] = table["final_score"].apply(lambda x: semaforo(float(x))[2])
-        table = table[["Semaforo", "Esito", "primary_class_name", "display_name", "direct_or_indirect", "final_score", "pss"]]
-        table.columns = ["Semaforo", "Esito", "Classe", "Esempio", "Tipo", "Score", "PSS"]
+        table["Motivo clinico"] = table.apply(lambda r: material_class_reason(case, idx, top_material, r), axis=1)
+        table = table[["Semaforo", "Esito", "primary_class_name", "display_name", "direct_or_indirect", "final_score", "pss", "Motivo clinico"]]
+        table.columns = ["Semaforo", "Esito", "Classe", "Esempio", "Tipo", "Score", "PSS", "Motivo clinico"]
         st.dataframe(table, use_container_width=True, hide_index=True)
 
     with st.expander("Fonti del materiale top", expanded=False):
