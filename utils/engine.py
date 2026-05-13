@@ -133,6 +133,72 @@ def _sex_biologic_context_modifier(case: Dict[str, object]) -> float:
 
 
 
+def _posterior_direct_cuspal_viability(case: Dict[str, object], idx: CaseIndices) -> Dict[str, object]:
+    """Evaluate whether a posterior one-cusp defect is still a direct-material case.
+
+    This is a material-centred guardrail. A single missing cusp in a vital molar
+    must not automatically push the engine toward ceramic/indirect classes. Modern
+    adhesive direct composites remain realistic when structure, load and operative
+    field are favourable. The function returns a graded signal rather than a hard
+    prescription.
+    """
+    posterior = _is_posterior(case)
+    single_cusp = case.get('cusp_loss') == 'Sì' and int(case.get('involved_cusps', 0)) == 1
+    not_complex = (
+        case.get('endo_treated') == 'No' and
+        case.get('vitality') == 'Vitale' and
+        case.get('crack') == 'No' and
+        int(case.get('residual_walls', 0)) >= 2 and
+        case.get('coronal_tissue') in ['>75%', '50-75%', '25-50%'] and
+        case.get('ferrule') != 'Assente'
+    )
+    adhesive_ok = (
+        case.get('isolation') in ['Facile', 'Difficile'] and
+        case.get('margin') in ['Sovragengivale', 'Juxtagengivale'] and
+        case.get('adhesive_context') in ['Favorevole', 'Intermedio']
+    )
+    load_ok = (
+        idx.fsi < 0.62 and
+        case.get('occlusal_load') != 'Alto' and
+        case.get('bruxism') != 'Confermata' and
+        case.get('parafunction_severity') not in ['Severa'] and
+        case.get('tooth_wear') not in ['Severa'] and
+        case.get('antagonist') != 'Protesico'
+    )
+    size_ok = (
+        case.get('cavity_size') in ['Media', 'Ampia'] and
+        idx.ssi <= 0.55 and
+        int(case.get('involved_cusps', 0)) <= 1
+    )
+    direct_context = (
+        case.get('clinical_priority') in ['Conservatività', 'Rapidità'] or
+        case.get('workflow_preference') == 'Chairside' or
+        case.get('max_sessions') == '1' or
+        case.get('budget_level') == 'Basso' or
+        case.get('indirect_acceptance') in ['No', 'Incerta']
+    )
+    viable = bool(posterior and single_cusp and not_complex and adhesive_ok and load_ok and size_ok)
+    # Stronger signal when the clinician/patient constraints also favour a direct path.
+    strength = 0.0
+    if viable:
+        strength = 0.62 + (0.20 if direct_context else 0.0)
+        if int(case.get('residual_walls', 0)) >= 3:
+            strength += 0.08
+        if case.get('wall_thickness') == 'Adeguato':
+            strength += 0.05
+        if case.get('cavity_size') == 'Media':
+            strength += 0.04
+        if case.get('indirect_acceptance') == 'Sì' and case.get('max_sessions') in ['2', '3+'] and case.get('budget_level') in ['Medio', 'Alto']:
+            # Indirect acceptance should not erase direct viability; it only softens the push.
+            strength -= 0.08
+    return {
+        'viable': viable,
+        'strength': _clamp(strength),
+        'reason': 'posteriore vitale con singola cuspide mancante, carico non severo e campo adesivo gestibile',
+    }
+
+
+
 def assess_material_case_feasibility(case: Dict[str, object], idx: CaseIndices | None = None) -> Dict[str, object]:
     """Screen whether a material recommendation should be generated.
 
@@ -338,7 +404,9 @@ def recommend_restoration(case: Dict[str, object], idx: CaseIndices) -> pd.DataF
         case['cavity_size'] in ['Media', 'Ampia'] and
         not very_low_tissue
     )
-    cuspal_protection_need = cusp_loss or involved_cusps >= 1
+    direct_cuspal_signal = _posterior_direct_cuspal_viability(case, idx)
+    direct_cuspal_viable = bool(direct_cuspal_signal['viable'])
+    cuspal_protection_need = (cusp_loss or involved_cusps >= 1) and not direct_cuspal_viable
     broad_coverage_need = involved_cusps >= 2 or low_tissue or endo or idx.ssi >= 0.62
     circumferential_need = (
         residual_walls <= 1 or
@@ -395,6 +463,15 @@ def recommend_restoration(case: Dict[str, object], idx: CaseIndices) -> pd.DataF
         inlay -= 5
         onlay += 9
         overlay += 4
+    elif direct_cuspal_viable:
+        # A vital posterior tooth with one cusp missing is often still a direct-material case
+        # when the adhesive field and load are controlled. Do not let the envelope force
+        # an indirect onlay solely because one cusp is involved.
+        direct += 13 * float(direct_cuspal_signal['strength'])
+        inlay -= 4
+        onlay -= 9 * float(direct_cuspal_signal['strength'])
+        overlay -= 10
+        crown -= 14
     if involved_cusps >= 2:
         direct -= 8
         inlay -= 8
@@ -587,6 +664,14 @@ def _material_modality_fits(case: Dict[str, object], idx: CaseIndices) -> Tuple[
         0.22 * (1 - indirect_feasibility) -
         0.12 * very_low_tissue_factor * (1.0 if case['margin'] == 'Subgengivale' else 0.0)
     )
+    direct_cuspal_signal = _posterior_direct_cuspal_viability(case, idx)
+    if direct_cuspal_signal['viable']:
+        # A single missing cusp in a vital, controlled posterior case is not
+        # automatically an indirect-material indication. Keep direct classes
+        # clinically competitive even when indirect workflow is acceptable.
+        sig = float(direct_cuspal_signal['strength'])
+        direct_fit = _clamp(direct_fit + 0.18 * sig)
+        indirect_fit = _clamp(indirect_fit - 0.10 * sig)
     return direct_fit, indirect_fit
 
 
@@ -918,6 +1003,8 @@ def rank_materials(case: Dict[str, object], idx: CaseIndices, materials: pd.Data
             case['isolation'] != 'Impossibile' and
             case['margin'] != 'Subgengivale'
         )
+        posterior_single_cusp_direct = _posterior_direct_cuspal_viability(case, idx)
+        posterior_single_cusp_direct_viable = bool(posterior_single_cusp_direct['viable'])
 
         if anterior_sector and idx.edi >= 0.65 and ('nanofilled' in lc or 'nanoibrido' in lc or 'microibrido' in lc):
             bonus += 0.035
@@ -930,14 +1017,18 @@ def rank_materials(case: Dict[str, object], idx: CaseIndices, materials: pd.Data
             # they should no longer block the appearance of glass-ceramic options.
             penalty += 0.015
 
-        if posterior_sector and material_type == 'Direct' and ('bulk-fill sculptable' in lc or 'packable' in lc or 'nanoibrido' in lc or 'microibrido' in lc or 'nanofilled' in lc):
+        if posterior_sector and material_type == 'Direct' and ('bulk-fill sculptable' in lc or 'packable' in lc or 'nanoibrido' in lc or 'microibrido' in lc or 'nanofilled' in lc or 'universale' in lc):
             bonus += 0.020
-        if posterior_moderate_direct_viable and material_type == 'Direct' and ('bulk-fill sculptable' in lc or 'packable' in lc or 'nanoibrido' in lc or 'microibrido' in lc or 'nanofilled' in lc):
+        if posterior_moderate_direct_viable and material_type == 'Direct' and ('bulk-fill sculptable' in lc or 'packable' in lc or 'nanoibrido' in lc or 'microibrido' in lc or 'nanofilled' in lc or 'universale' in lc):
             bonus += 0.050
+        if posterior_single_cusp_direct_viable and material_type == 'Direct' and ('bulk-fill sculptable' in lc or 'packable' in lc or 'nanoibrido' in lc or 'microibrido' in lc or 'nanofilled' in lc or 'universale' in lc):
+            bonus += 0.070 * float(posterior_single_cusp_direct['strength'])
         if posterior_sector and material_type == 'Indirect' and (protection_high or high_load or indirect_fit > direct_fit + 0.12) and ('zirconia' in lc or 'disilicato' in lc or 'lithium disilicate' in lc or 'zls' in lc):
             bonus += 0.030
         if posterior_moderate_direct_viable and material_type == 'Indirect' and ('zirconia 3y' in lc or 'alta resistenza' in lc):
             penalty += 0.035
+        if posterior_single_cusp_direct_viable and material_type == 'Indirect' and ('disilicato' in lc or 'lithium disilicate' in lc or 'zls' in lc or 'zirconia' in lc or 'cad/cam composite' in lc or 'picn' in lc):
+            penalty += 0.060 * float(posterior_single_cusp_direct['strength'])
 
         if case['tooth_group'] == 'Molare' and high_load and ('feldsp' in lc or 'leucite' in lc or lc == 'flowable composite'):
             penalty += 0.18
@@ -1013,6 +1104,8 @@ def rank_materials(case: Dict[str, object], idx: CaseIndices, materials: pd.Data
             drivers.append('caso anteriore esteso ad alta richiesta estetica')
         if 'posterior_moderate_direct_viable' in locals() and posterior_moderate_direct_viable and material_type == 'Direct' and bonus > 0.0:
             drivers.append('posteriore moderato ancora gestibile con classe diretta')
+        if 'posterior_single_cusp_direct_viable' in locals() and posterior_single_cusp_direct_viable and material_type == 'Direct':
+            drivers.append('singola cuspide posteriore ancora gestibile con materiale diretto')
         if bonus > 0.0:
             drivers.append('bonus clinico specifico di settore/materiale')
         if penalty > 0.0:
@@ -1071,7 +1164,7 @@ def rank_materials(case: Dict[str, object], idx: CaseIndices, materials: pd.Data
             'bonus_points': round(bonus * 100, 1),
             'penalty_points': round(penalty * 100, 1),
             'dominant_material_axis': dominant_axis,
-            'score_model_version': 'material_axis_v2.9.5',
+            'score_model_version': 'material_axis_v2.9.6',
             'top_drivers': '; '.join(drivers),
             'source_urls': source_urls,
             'official_manufacturer_wording': row.get('official_manufacturer_wording', ''),

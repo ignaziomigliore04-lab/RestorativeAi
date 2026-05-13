@@ -10,6 +10,7 @@ from utils.engine import (
     assess_material_case_feasibility,
     compute_case_indices,
     rank_materials,
+    _posterior_direct_cuspal_viability,
 )
 
 
@@ -152,6 +153,23 @@ def _apply_archetype(case: Dict[str, object], archetype: str, rng: random.Random
             'indirect_acceptance': rng.choice(['Sì', 'Incerta']), 'max_sessions': rng.choice(['1', '2']),
             'workflow_preference': rng.choice(['Chairside', 'Indifferente'])
         })
+    elif archetype == 'posterior_single_cusp_direct':
+        tooth, group = _tooth_for('Posteriore', rng, force_group='Molare')
+        case.update({
+            'tooth_number': tooth, 'tooth_group': group, 'clinical_sector': 'Posteriore',
+            'black_class': rng.choice(['I', 'II']), 'clinical_priority': rng.choice(['Conservatività', 'Durata', 'Rapidità']),
+            'vitality': 'Vitale', 'endo_treated': 'No', 'residual_walls': rng.choice([2, 3]),
+            'marginal_ridges': rng.choice([1, 2]), 'cavity_size': rng.choice(['Media', 'Ampia']),
+            'coronal_tissue': rng.choice(['>75%', '50-75%']), 'wall_thickness': rng.choice(['Adeguato', 'Sottile']),
+            'cusp_loss': 'Sì', 'involved_cusps': 1, 'ferrule': rng.choice(['Presente', 'Parziale']),
+            'crack': 'No', 'isolation': rng.choice(['Facile', 'Difficile']),
+            'margin': rng.choice(['Sovragengivale', 'Juxtagengivale']), 'adhesive_context': rng.choice(['Favorevole', 'Intermedio']),
+            'occlusal_load': rng.choice(['Basso', 'Medio']), 'bruxism': rng.choice(['Assente', 'Sospetta']),
+            'parafunction_severity': rng.choice(['Assente', 'Lieve']), 'tooth_wear': rng.choice(['Assente', 'Lieve']),
+            'antagonist': rng.choice(['Naturale', 'Restauro']), 'indirect_acceptance': rng.choice(['Sì', 'Incerta', 'No']),
+            'max_sessions': rng.choice(['1', '2']), 'budget_level': rng.choice(['Basso', 'Medio']),
+            'workflow_preference': rng.choice(['Chairside', 'Indifferente'])
+        })
     elif archetype == 'posterior_moderate_indirect_possible':
         case.update({
             'clinical_priority': 'Durata', 'residual_walls': rng.choice([2, 3]), 'marginal_ridges': 1,
@@ -266,6 +284,7 @@ ARCHETYPES = [
     'anterior_extended_esthetic',
     'posterior_small_conservative',
     'posterior_moderate_direct_viable',
+    'posterior_single_cusp_direct',
     'posterior_moderate_indirect_possible',
     'posterior_high_load',
     'endo_structural_loss',
@@ -279,9 +298,13 @@ def _case_for_target(field: str, value: object, rng: random.Random) -> Dict[str,
     if field == 'clinical_sector' and value == 'Anteriore':
         case = _make_archetype_case(rng.choice(['anterior_small_direct', 'anterior_extended_esthetic']), rng)
     elif field == 'clinical_sector' and value == 'Posteriore':
-        case = _make_archetype_case(rng.choice(['posterior_small_conservative', 'posterior_moderate_direct_viable', 'posterior_high_load']), rng)
+        case = _make_archetype_case(rng.choice(['posterior_small_conservative', 'posterior_moderate_direct_viable', 'posterior_single_cusp_direct', 'posterior_high_load']), rng)
     elif field == 'black_class' and value in ['III', 'IV']:
         case = _make_archetype_case('anterior_extended_esthetic' if value == 'IV' else 'anterior_small_direct', rng)
+    elif field == 'cusp_loss' and value == 'Sì':
+        case = _make_archetype_case(rng.choice(['posterior_single_cusp_direct', 'posterior_moderate_indirect_possible', 'posterior_high_load']), rng)
+    elif field == 'involved_cusps' and value == 1:
+        case = _make_archetype_case(rng.choice(['posterior_single_cusp_direct', 'posterior_moderate_direct_viable']), rng)
     elif field in {'residual_walls', 'ferrule', 'coronal_tissue', 'wall_thickness', 'involved_cusps', 'marginal_ridges', 'endo_treated'} and value in [0, 1, 4, 'Assente', '<25%', 'Molto sottile', 'Sì']:
         case = _make_archetype_case(rng.choice(['endo_structural_loss', 'posterior_high_load', 'posterior_moderate_indirect_possible']), rng)
     elif field in {'isolation', 'margin', 'caries_risk', 'plaque_control', 'compliance', 'adhesive_context', 'xerostomia', 'periodontal_support'} and value in ['Impossibile', 'Subgengivale', 'Alto', 'Scarso', 'Bassa', 'Sfavorevole', 'Sì', 'Ridotto']:
@@ -417,6 +440,9 @@ def _flag_case(case: Dict[str, object], idx, ranked: pd.DataFrame) -> Tuple[List
         red.append('ceramica fragile/top estetica in molare ad alto carico')
     if case['indirect_acceptance'] == 'No' and top_type == 'Indirect':
         red.append('classe indiretta top nonostante mancata accettazione')
+    direct_cusp_signal = _posterior_direct_cuspal_viability(case, idx)
+    if top_type == 'Indirect' and direct_cusp_signal['viable']:
+        yellow.append('classe indiretta top in caso dove la ricostruzione diretta cuspidale è plausibile')
     if top_type == 'Direct' and high_load and strong_protection:
         yellow.append('classe diretta top in caso con alta richiesta protettiva')
     if gap_val is not None and gap_val < 2.0:

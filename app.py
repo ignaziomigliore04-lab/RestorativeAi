@@ -155,6 +155,21 @@ def _load():
 materials_df, props_df, sources_df = _load()
 
 
+
+
+def material_aligned_restoration_context(rest_df: pd.DataFrame, top_material: pd.Series) -> pd.Series:
+    """Keep the visible envelope aligned with the material-first decision.
+
+    The restoration envelope is secondary. If the best material class is direct and
+    the direct envelope is clinically acceptable, the UI should not visually pull the
+    user back toward an indirect/prosthetic reading of the case.
+    """
+    if str(top_material.get("direct_or_indirect", "")) == "Direct":
+        direct_rows = rest_df[rest_df["restoration"] == "Restauro diretto in composito"]
+        if not direct_rows.empty and float(direct_rows.iloc[0].get("score", 0)) >= 55:
+            return direct_rows.iloc[0]
+    return rest_df.iloc[0]
+
 def semaforo(score: float):
     if score >= 82:
         return "🟢", "sem-green", "Raccomandato"
@@ -1552,8 +1567,8 @@ def render_clinical_page():
         return
     rest_df, ranked = rank_materials(case, idx, materials_df, sources_df)
     ranked = add_material_decision_metadata(ranked)
-    top_rest = rest_df.iloc[0]
     top_material = ranked.iloc[0]
+    top_rest = material_aligned_restoration_context(rest_df, top_material)
 
     rest_icon, rest_css, rest_status = semaforo(float(top_rest["score"]))
     mat_icon, mat_css, mat_status = semaforo(float(top_material["final_score"]))
