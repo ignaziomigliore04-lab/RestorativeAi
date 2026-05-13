@@ -1006,6 +1006,53 @@ def rank_materials(case: Dict[str, object], idx: CaseIndices, materials: pd.Data
         posterior_single_cusp_direct = _posterior_direct_cuspal_viability(case, idx)
         posterior_single_cusp_direct_viable = bool(posterior_single_cusp_direct['viable'])
 
+        # Zirconia calibration: zirconia is a real contemporary indirect material,
+        # but it should behave like a high-strength solution, not as the default
+        # answer for every indirect posterior case. Conservative adhesive partial
+        # cases should leave room for direct composites, CAD/CAM composites, PICN,
+        # lithium disilicate and ZLS; zirconia should rise when functional or
+        # structural demands are genuinely high.
+        adhesive_field_controlled = (
+            case['isolation'] in ['Facile', 'Difficile'] and
+            case['margin'] in ['Sovragengivale', 'Juxtagengivale'] and
+            case['adhesive_context'] in ['Favorevole', 'Intermedio']
+        )
+        conservative_adhesive_partial = (
+            posterior_sector and
+            case['endo_treated'] == 'No' and
+            case['crack'] == 'No' and
+            int(case['residual_walls']) >= 2 and
+            int(case['involved_cusps']) <= 1 and
+            idx.ssi < 0.62 and
+            idx.fsi < 0.68 and
+            adhesive_field_controlled
+        )
+        high_strength_zirconia_context = (
+            posterior_sector and (
+                idx.fsi >= 0.72 or
+                case['occlusal_load'] == 'Alto' or
+                case['bruxism'] == 'Confermata' or
+                case['parafunction_severity'] in ['Moderata', 'Severa'] or
+                case['antagonist'] == 'Protesico' or
+                case['tooth_wear'] in ['Moderata', 'Severa'] or
+                int(case['involved_cusps']) >= 2 or
+                int(case['residual_walls']) <= 1 or
+                case['wall_thickness'] == 'Molto sottile' or
+                case['crack'] == 'Sì' or
+                (case['endo_treated'] == 'Sì' and case['coronal_tissue'] in ['25-50%', '<25%'])
+            )
+        )
+        adhesive_indirect_partial_context = (
+            posterior_sector and
+            material_type == 'Indirect' and
+            adhesive_field_controlled and
+            idx.ssi < 0.70 and
+            idx.fsi < 0.72 and
+            int(case['involved_cusps']) <= 2 and
+            int(case['residual_walls']) >= 2 and
+            case['endo_treated'] == 'No'
+        )
+
         if anterior_sector and idx.edi >= 0.65 and ('nanofilled' in lc or 'nanoibrido' in lc or 'microibrido' in lc):
             bonus += 0.035
         if anterior_sector and idx.edi >= 0.65 and ('disilicato' in lc or 'lithium disilicate' in lc or 'leucite' in lc or 'feldsp' in lc or 'zls' in lc or 'cad/cam composite' in lc or 'resin nanoceramic' in lc or 'picn' in lc):
@@ -1023,12 +1070,27 @@ def rank_materials(case: Dict[str, object], idx: CaseIndices, materials: pd.Data
             bonus += 0.050
         if posterior_single_cusp_direct_viable and material_type == 'Direct' and ('bulk-fill sculptable' in lc or 'packable' in lc or 'nanoibrido' in lc or 'microibrido' in lc or 'nanofilled' in lc or 'universale' in lc):
             bonus += 0.070 * float(posterior_single_cusp_direct['strength'])
-        if posterior_sector and material_type == 'Indirect' and (protection_high or high_load or indirect_fit > direct_fit + 0.12) and ('zirconia' in lc or 'disilicato' in lc or 'lithium disilicate' in lc or 'zls' in lc):
-            bonus += 0.030
+        if posterior_sector and material_type == 'Indirect' and (protection_high or high_load or indirect_fit > direct_fit + 0.12) and ('disilicato' in lc or 'lithium disilicate' in lc or 'zls' in lc or 'cad/cam composite' in lc or 'resin nanoceramic' in lc or 'picn' in lc or 'composito indiretto' in lc):
+            bonus += 0.028
+        if posterior_sector and material_type == 'Indirect' and high_strength_zirconia_context and ('zirconia' in lc or 'alta resistenza' in lc):
+            bonus += 0.045
+        if posterior_sector and material_type == 'Indirect' and high_strength_zirconia_context and ('zirconia 3y' in lc or 'alta resistenza' in lc):
+            bonus += 0.025
+        if posterior_sector and material_type == 'Indirect' and high_strength_zirconia_context and ('alta traslucenza' in lc or '4y' in lc or '5y' in lc) and idx.edi >= 0.42:
+            bonus += 0.012
+
         if posterior_moderate_direct_viable and material_type == 'Indirect' and ('zirconia 3y' in lc or 'alta resistenza' in lc):
-            penalty += 0.035
-        if posterior_single_cusp_direct_viable and material_type == 'Indirect' and ('disilicato' in lc or 'lithium disilicate' in lc or 'zls' in lc or 'zirconia' in lc or 'cad/cam composite' in lc or 'picn' in lc):
-            penalty += 0.060 * float(posterior_single_cusp_direct['strength'])
+            penalty += 0.065
+        if conservative_adhesive_partial and material_type == 'Indirect' and ('zirconia 3y' in lc or 'alta resistenza' in lc):
+            penalty += 0.095
+        if conservative_adhesive_partial and material_type == 'Indirect' and ('alta traslucenza' in lc or '4y' in lc or '5y' in lc):
+            penalty += 0.055
+        if adhesive_indirect_partial_context and material_type == 'Indirect' and ('disilicato' in lc or 'lithium disilicate' in lc or 'zls' in lc or 'cad/cam composite' in lc or 'resin nanoceramic' in lc or 'picn' in lc or 'composito indiretto' in lc):
+            bonus += 0.018
+        if posterior_single_cusp_direct_viable and material_type == 'Indirect' and ('zirconia' in lc or 'alta resistenza' in lc):
+            penalty += 0.095 * float(posterior_single_cusp_direct['strength'])
+        if posterior_single_cusp_direct_viable and material_type == 'Indirect' and ('disilicato' in lc or 'lithium disilicate' in lc or 'zls' in lc or 'cad/cam composite' in lc or 'resin nanoceramic' in lc or 'picn' in lc):
+            penalty += 0.048 * float(posterior_single_cusp_direct['strength'])
 
         if case['tooth_group'] == 'Molare' and high_load and ('feldsp' in lc or 'leucite' in lc or lc == 'flowable composite'):
             penalty += 0.18
@@ -1164,7 +1226,7 @@ def rank_materials(case: Dict[str, object], idx: CaseIndices, materials: pd.Data
             'bonus_points': round(bonus * 100, 1),
             'penalty_points': round(penalty * 100, 1),
             'dominant_material_axis': dominant_axis,
-            'score_model_version': 'material_axis_v2.9.6',
+            'score_model_version': 'material_axis_v2.9.8',
             'top_drivers': '; '.join(drivers),
             'source_urls': source_urls,
             'official_manufacturer_wording': row.get('official_manufacturer_wording', ''),

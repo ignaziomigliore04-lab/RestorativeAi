@@ -1,21 +1,16 @@
-Restorative AI — Material-first v2.9.6
+Restorative AI v2.9.8 - Realistic zirconia calibration
 
-Focus principale:
-- scelta della classe/tipo di materiale dentario
-- restauro/envelope solo come informazione secondaria
-- logica database-driven, non adaptive/learning
+Material-first Streamlit decision support for restorative dental materials.
 
-Correzione v2.9.6:
-- maggiore realismo nei posteriori vitali con singola cuspide mancante
-- una cuspide mancante non forza più automaticamente materiali indiretti o onlay in disilicato
-- le classi dirette moderne restano competitive quando carico, isolamento, pareti residue e controllo clinico sono favorevoli
-- nei casi severi, endodontici, ad alto carico o con più cuspidi coinvolte, le classi indirette/protettive restano favorite
+What changed in v2.9.8:
+- Zirconia is no longer treated as a generic indirect default.
+- Zirconia 3Y/high-strength rises mainly in true high-load, prosthetic/structural, endodontic or severely compromised posterior cases.
+- Zirconia 4Y/5Y remains available when strength and esthetics both matter, but is penalized in conservative adhesive partial cases.
+- Conservative posterior cases with one cusp involved, vital tooth, controlled load and manageable adhesive field now keep direct materials strongly competitive.
+- Adhesive partial indirect cases give more room to lithium disilicate, ZLS, CAD/CAM composite blocks, resin nanoceramic/PICN and indirect composites.
+- Clinical output remains concise and material-centred; restoration remains a secondary envelope.
 
-Avvio locale:
+Main file: app.py
+Run locally:
 source .venv/bin/activate
 python3 -m streamlit run app.py
-
-Deploy Streamlit Cloud:
-Repository: ignaziomigliore04-lab/RestorativeAi
-Branch: main
-Main file path: app.py

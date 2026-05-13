@@ -128,6 +128,17 @@ div[data-testid="stDataFrame"], div[data-testid="stTable"] {border-radius: 18px;
 .key-message {background:linear-gradient(135deg,#f8fbff,#f7f2ff); border:1px solid #ded6ff; border-radius:20px; padding:0.85rem 0.95rem; margin:0.72rem 0; box-shadow:0 8px 22px rgba(76,104,180,0.07);}
 .key-message-title {font-size:0.82rem; font-weight:800; color:#6d28d9; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.25rem;}
 .key-message-copy {font-size:1rem; color:#1f2937; line-height:1.45;}
+.clinical-rec-card {background:radial-gradient(circle at top right, rgba(139,92,246,0.14), transparent 28%), linear-gradient(135deg,#ffffff 0%,#f7fbff 48%,#f5efff 100%); border:1px solid #d9ccff; border-radius:24px; padding:1rem 1.05rem; margin:0.75rem 0 0.7rem 0; box-shadow:0 12px 26px rgba(76,104,180,0.10);}
+.clinical-rec-eyebrow {font-size:0.78rem; color:#6d28d9; font-weight:850; text-transform:uppercase; letter-spacing:0.055em; margin-bottom:0.35rem;}
+.clinical-rec-main {font-size:1.25rem; line-height:1.28; color:#111827; font-weight:750; margin-bottom:0.48rem;}
+.clinical-rec-copy {font-size:0.98rem; line-height:1.55; color:#334155;}
+.clinical-disclaimer {background:#ffffffcc; border:1px solid #e7defe; border-radius:18px; padding:0.7rem 0.8rem; margin-top:0.65rem; color:#4b5563; font-size:0.92rem; line-height:1.45;}
+.recommendation-strip {display:grid; grid-template-columns:repeat(3,1fr); gap:0.55rem; margin:0.75rem 0 0.45rem 0;}
+.recommendation-tile {background:#ffffff; border:1px solid #e7defe; border-radius:18px; padding:0.72rem 0.75rem; min-height:76px;}
+.recommendation-tile-label {font-size:0.75rem; color:#6d28d9; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.25rem;}
+.recommendation-tile-value {font-size:0.95rem; color:#111827; font-weight:750; line-height:1.25;}
+.clinician-note {background:linear-gradient(135deg,#eef4ff,#f7f2ff); border:1px solid #d9ccff; border-radius:20px; padding:0.85rem 0.95rem; margin:0.75rem 0; color:#334155; font-size:0.95rem; line-height:1.5;}
+.clinician-note strong {color:#111827;}
 .why-optimal-list {margin:0.35rem 0 0 0; padding:0; display:grid; grid-template-columns:1fr; gap:0.38rem;}
 .why-optimal-item {list-style:none; background:rgba(255,255,255,0.72); border:1px solid #e7defe; border-radius:14px; padding:0.48rem 0.58rem; color:#1f2937; font-size:0.92rem; line-height:1.35;}
 .why-optimal-item strong {color:#111827;}
@@ -655,6 +666,77 @@ def compact_class_verdict(case, idx, top_row) -> str:
     return f"**{cls}** è la scelta migliore perché massimizza il fit di **{driver}** in una strategia **{mode}**."
 
 
+def _clinical_driver_phrase(case, idx, top_row) -> str:
+    driver = material_driver_sentence(top_row)
+    if driver == "meccanica/struttura":
+        if idx.fsi >= 0.60:
+            return "serve una classe con buon controllo di carico, usura e stabilità strutturale"
+        return "la struttura residua richiede un materiale affidabile ma ancora conservativo"
+    if driver == "biologia/adesione":
+        return "isolamento, margine e rischio biologico condizionano la predicibilità adesiva"
+    if driver == "estetica":
+        return "la richiesta estetica e il settore rendono prioritari resa ottica e lucidabilità"
+    if driver == "workflow":
+        return "tempi, budget e accettazione del piano orientano verso la soluzione più praticabile"
+    if driver == "evidenza database":
+        return "la classe ha una base dati più solida nel database rispetto alle alternative"
+    return "il percorso diretto/indiretto della classe è coerente con i vincoli inseriti"
+
+
+def assisted_recommendation_html(case, idx, top_row, ranked=None) -> str:
+    cls = escape(safe_text(top_row.get("primary_class_name", "classe materiale")))
+    mode = "diretta" if top_row.get("direct_or_indirect") == "Direct" else "indiretta"
+    driver = escape(material_driver_sentence(top_row))
+    sector = escape(safe_text(case.get("clinical_sector", "settore clinico"))).lower()
+    score = float(top_row.get("final_score", 0.0))
+    phrase = escape(_clinical_driver_phrase(case, idx, top_row))
+    advantage = ""
+    if ranked is not None and getattr(ranked, "shape", (0,))[0] > 1:
+        second = ranked.iloc[1]
+        gap = score - float(second.get("final_score", 0.0))
+        if gap < 2.0:
+            advantage = f" La seconda classe, <strong>{escape(safe_text(second.get('primary_class_name')))}</strong>, è molto vicina: va considerata come alternativa reale."
+        else:
+            advantage = f" Il margine sulla seconda classe è <strong>{gap:.1f} punti</strong>."
+    return (
+        "<div class='clinical-rec-card'>"
+        "<div class='clinical-rec-eyebrow'>Raccomandazione assistita</div>"
+        f"<div class='clinical-rec-main'>La classe più coerente è <strong>{cls}</strong>.</div>"
+        f"<div class='clinical-rec-copy'>È proposta perché, in questo caso, <strong>{driver}</strong> è il driver principale: {phrase}. "
+        f"Il profilo è <strong>{mode}</strong>, in settore <strong>{sector}</strong>, con score <strong>{score:.1f}</strong>.{advantage}</div>"
+        "<div class='clinical-disclaimer'><strong>Ruolo del sistema:</strong> supporta la scelta del materiale, ma non sostituisce diagnosi, esperienza clinica, controllo intraoperatorio e consenso del paziente.</div>"
+        "</div>"
+    )
+
+
+def recommendation_tiles_html(case, idx, top_row, ranked=None) -> str:
+    mode = "Diretto" if top_row.get("direct_or_indirect") == "Direct" else "Indiretto"
+    driver = material_driver_sentence(top_row)
+    confidence = safe_text(top_row.get("confidence_label", "Intermedia"))
+    alt_text = "Non dominante"
+    if ranked is not None and getattr(ranked, "shape", (0,))[0] > 1:
+        second = ranked.iloc[1]
+        gap = float(top_row.get("final_score", 0)) - float(second.get("final_score", 0))
+        alt_text = "Quasi equivalente" if gap < 2.0 else f"Gap {gap:.1f}"
+    tiles = [
+        ("Strategia", mode),
+        ("Driver", driver),
+        ("Decisione", f"{confidence} · {alt_text}"),
+    ]
+    html = "<div class='recommendation-strip'>"
+    for label, value in tiles:
+        html += f"<div class='recommendation-tile'><div class='recommendation-tile-label'>{escape(label)}</div><div class='recommendation-tile-value'>{escape(safe_text(value))}</div></div>"
+    html += "</div>"
+    return html
+
+
+def clinician_support_note_html() -> str:
+    return (
+        "<div class='clinician-note'><strong>Interpretazione:</strong> questa è una raccomandazione di classe materiale basata sui dati inseriti. "
+        "La scelta definitiva resta clinica e va confermata su campo con isolamento, spessori, occlusione, substrato e preferenze del paziente.</div>"
+    )
+
+
 def public_restricted_page():
     st.markdown("<div class='gate-card'><div class='gate-title'>Accesso limitato</div><div class='gate-copy'>Questo decision support è destinato a odontoiatri, studenti di odontoiatria e professionisti del settore dentale. Non è uno strumento per autodiagnosi o scelta autonoma di materiali/restauri.</div></div>", unsafe_allow_html=True)
     st.info("Per dubbi clinici o restaurativi, consulta un odontoiatra. Puoi tornare alla Home, ma il Material Decision Assistant resta filtrato per uso professionale.")
@@ -798,8 +880,8 @@ def _class_family_text(class_name: str) -> dict:
             "adhesion": "Può consentire cementazione meno adesiva in alcune indicazioni; bonding specifico se necessario.",
             "thickness": "Buona efficienza meccanica anche a spessori ridotti, da confermare secondo sistema/produttore.",
             "repair": "Riparabilità intraorale più complessa; grande vantaggio meccanico.",
-            "indications": "Posteriori, carico elevato, parafunzione, casi in cui domina la resistenza.",
-            "limits": "Compromesso estetico possibile in area anteriore; attenzione a lucidatura, antagonista e design occlusale.",
+            "indications": "Posteriori ad alto carico, parafunzione, antagonista protesico, corone/pilastri e casi strutturali dove domina la resistenza.",
+            "limits": "Non è la scelta automatica negli indiretti adesivi conservativi; attenzione a estetica, lucidatura, antagonista e protocollo di bonding.",
         }
     if 'alta traslucenza' in c or '4y' in c or '5y' in c:
         return {
@@ -807,8 +889,8 @@ def _class_family_text(class_name: str) -> dict:
             "adhesion": "Cementazione/bonding da scegliere secondo preparazione, ritenzione e protocollo del sistema.",
             "thickness": "Richiede verifica dello spessore minimo perché la maggiore traslucenza può ridurre margine meccanico rispetto a 3Y.",
             "repair": "Riparabilità più complessa dei compositi; buon compromesso tra estetica e robustezza.",
-            "indications": "Posteriori e anteriori selezionati quando serve equilibrio tra estetica e resistenza.",
-            "limits": "Non è automaticamente equivalente alla 3Y nei carichi estremi né alle vetroceramiche nei casi estetici più critici.",
+            "indications": "Posteriori/anteriori selezionati quando serve equilibrio tra resistenza ed estetica, non massima robustezza assoluta.",
+            "limits": "Da evitare come default nei parziali conservativi se compositi, ibridi o vetroceramiche adesive sono più coerenti.",
         }
     if 'cad/cam composite' in c or 'resin nanoceramic' in c or 'picn' in c:
         return {
@@ -910,6 +992,8 @@ def material_risk_alerts(case, idx, top_row, ranked) -> list[str]:
         alerts.append("Classe molto estetica ma più delicata: attenzione se il carico funzionale è moderato/alto.")
     if ('zirconia 3y' in cls or 'alta resistenza' in cls) and case.get("clinical_sector") == "Anteriore" and case.get("esthetic_demand") == "Alta":
         alerts.append("Zirconia ad alta resistenza in area estetica: verificare traslucenza, spessore e mascheramento cromatico.")
+    if ('zirconia 3y' in cls or 'alta resistenza' in cls or 'alta traslucenza' in cls or '4y' in cls or '5y' in cls) and case.get("clinical_sector") == "Posteriore" and int(case.get("involved_cusps", 0)) <= 1 and case.get("endo_treated") == "No" and case.get("occlusal_load") != "Alto":
+        alerts.append("Zirconia in caso conservativo: confermare che serva davvero alta resistenza rispetto a diretto, ibridi o vetroceramiche adesive.")
     if top_row["direct_or_indirect"] == "Indirect" and case.get("budget_level") == "Basso":
         alerts.append("Classe indiretta con budget basso: discutere costo/beneficio e seconda classe quasi equivalente se presente.")
     if ranked is not None and ranked.shape[0] > 1 and (float(top_row["final_score"]) - float(ranked.iloc[1]["final_score"])) < 2:
@@ -1581,6 +1665,8 @@ def render_clinical_page():
     confidence_label = str(top_material.get("confidence_label", "Intermedia"))
     confidence_message = safe_text(top_material.get("confidence_message", ""))
     near_alt = near_equivalent_material(ranked, threshold=2.0)
+    alert_items = material_risk_alerts(case, idx, top_material, ranked)
+    compact_alerts = compact_alert_items(alert_items, n=3)
 
     hero_left, hero_right = st.columns([1.18, 0.82])
     with hero_left:
@@ -1589,12 +1675,9 @@ def render_clinical_page():
         st.markdown(f"<div class='result-main-title'><span>{top_material['primary_class_name']}</span></div>", unsafe_allow_html=True)
         st.markdown(f"<span class='confidence-badge {confidence_css(confidence_label)}'>Confidence: {confidence_label}</span>", unsafe_allow_html=True)
         st.markdown(chips_html(material_keyword_chips(case, idx, top_material, ranked)), unsafe_allow_html=True)
-        st.markdown(
-            f"<div class='key-message'><div class='key-message-title'>Perché è il materiale ottimale</div>"
-            f"<div class='key-message-copy'>{optimal_material_html(case, idx, top_material, ranked)}</div></div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("<div style='margin-top:0.55rem'><strong style='font-size:0.9rem;'>Esempi secondari</strong><br/>" + ''.join([f"<span class='material-chip'>{x}</span>" for x in class_examples_list]) + "</div>", unsafe_allow_html=True)
+        st.markdown(assisted_recommendation_html(case, idx, top_material, ranked), unsafe_allow_html=True)
+        st.markdown(recommendation_tiles_html(case, idx, top_material, ranked), unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:0.55rem'><strong style='font-size:0.9rem;'>Esempi commerciali secondari</strong><br/>" + ''.join([f"<span class='material-chip'>{x}</span>" for x in class_examples_list]) + "</div>", unsafe_allow_html=True)
         if near_alt is not None:
             alt_row, alt_gap = near_alt
             st.markdown(
@@ -1611,27 +1694,31 @@ def render_clinical_page():
         st.markdown("</div>", unsafe_allow_html=True)
     with hero_right:
         st.markdown("<div class='premium-panel' style='min-height:100%'>", unsafe_allow_html=True)
-        st.markdown("<div class='premium-panel-title'>Pesi principali</div>", unsafe_allow_html=True)
-        st.markdown(
-            "<div class='weight-grid'>"
-            f"<div class='weight-tile'><div class='weight-value'>{float(top_material.get('weight_mechanical', 0)):.0f}%</div><div class='weight-label'>Meccanica</div></div>"
-            f"<div class='weight-tile'><div class='weight-value'>{float(top_material.get('weight_biology', 0)):.0f}%</div><div class='weight-label'>Adesione</div></div>"
-            f"<div class='weight-tile'><div class='weight-value'>{float(top_material.get('weight_esthetic', 0)):.0f}%</div><div class='weight-label'>Estetica</div></div>"
-            f"<div class='weight-tile'><div class='weight-value'>{float(top_material.get('weight_workflow', 0)):.0f}%</div><div class='weight-label'>Workflow</div></div>"
-            "</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(f"<div class='key-message'><div class='key-message-title'>Base dati</div><div class='key-message-copy'><strong>{int(top_material.get('class_product_count', 1))}</strong> materiali · evidenza <strong>{float(top_material.get('evidence_score', 0)):.0f}%</strong> · completezza <strong>{float(top_material.get('quantitative_completeness_pct', 0)):.0f}%</strong></div></div>", unsafe_allow_html=True)
+        st.markdown("<div class='premium-panel-title'>Prima di confermare</div>", unsafe_allow_html=True)
+        st.markdown("<div class='alert-chip-row'>" + ''.join([f"<span class='alert-chip'>{compact_alert_keyword(x)}</span>" for x in compact_alerts]) + "</div>", unsafe_allow_html=True)
+        st.markdown(clinician_support_note_html(), unsafe_allow_html=True)
         st.markdown(f"<div class='small-muted'><strong>Envelope secondario:</strong> {top_rest['restoration']}</div>", unsafe_allow_html=True)
+        with st.expander("Metodo e base dati", expanded=False):
+            st.markdown("<strong>Pesi principali</strong>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='weight-grid'>"
+                f"<div class='weight-tile'><div class='weight-value'>{float(top_material.get('weight_mechanical', 0)):.0f}%</div><div class='weight-label'>Meccanica</div></div>"
+                f"<div class='weight-tile'><div class='weight-value'>{float(top_material.get('weight_biology', 0)):.0f}%</div><div class='weight-label'>Adesione</div></div>"
+                f"<div class='weight-tile'><div class='weight-value'>{float(top_material.get('weight_esthetic', 0)):.0f}%</div><div class='weight-label'>Estetica</div></div>"
+                f"<div class='weight-tile'><div class='weight-value'>{float(top_material.get('weight_workflow', 0)):.0f}%</div><div class='weight-label'>Workflow</div></div>"
+                "</div>",
+                unsafe_allow_html=True,
+            )
+            st.markdown(f"**Base dati:** {int(top_material.get('class_product_count', 1))} materiali · evidenza {float(top_material.get('evidence_score', 0)):.0f}% · completezza {float(top_material.get('quantitative_completeness_pct', 0)):.0f}%")
         st.markdown("</div>", unsafe_allow_html=True)
 
     m1, m2, m3, m4 = st.columns(4)
     with m1:
-        st.markdown(f"<div class='premium-metric'><div class='premium-metric-label'>Score materiale</div><div class='premium-metric-value'>{top_material['final_score']:.1f}</div><div class='premium-metric-note'>Motore clinico database-driven</div></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='premium-metric'><div class='premium-metric-label'>Coerenza</div><div class='premium-metric-value'>{top_material['final_score']:.1f}</div><div class='premium-metric-note'>Fit globale della classe</div></div>", unsafe_allow_html=True)
     with m2:
-        st.markdown(f"<div class='premium-metric'><div class='premium-metric-label'>PSS</div><div class='premium-metric-value'>{top_material['pss']:.1f}%</div><div class='premium-metric-note'>Predicted Success Score della classe</div></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='premium-metric'><div class='premium-metric-label'>Predicibilità</div><div class='premium-metric-value'>{top_material['pss']:.1f}%</div><div class='premium-metric-note'>Sul profilo inserito</div></div>", unsafe_allow_html=True)
     with m3:
-        st.markdown(f"<div class='premium-metric'><div class='premium-metric-label'>Tipo materiale</div><div class='premium-metric-value' style='font-size:1.38rem'>{material_mode}</div><div class='premium-metric-note'>Diretto/indiretto della classe</div></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='premium-metric'><div class='premium-metric-label'>Tipo</div><div class='premium-metric-value' style='font-size:1.38rem'>{material_mode}</div><div class='premium-metric-note'>Classe materiale</div></div>", unsafe_allow_html=True)
     with m4:
         st.markdown(f"<div class='premium-metric'><div class='premium-metric-label'>Confidence</div><div class='premium-metric-value' style='font-size:1.18rem'>{confidence_label}</div><div class='premium-metric-note'>{confidence_short_message(confidence_label)}</div></div>", unsafe_allow_html=True)
 
@@ -1659,30 +1746,19 @@ def render_clinical_page():
         st.markdown(concise_material_summary(case, idx, top_material))
         st.markdown(material_decision_explanation(case, idx, top_material))
 
-    st.markdown("### Pesi materiali")
-    st.dataframe(compact_weight_breakdown(top_material), use_container_width=True, hide_index=True)
-    with st.expander("Dettaglio pesi e logica database", expanded=False):
+    with st.expander("Metodo, pesi e affidabilità del database", expanded=False):
+        st.markdown("**Pesi principali usati nello score**")
+        st.dataframe(compact_weight_breakdown(top_material), use_container_width=True, hide_index=True)
+        st.markdown("**Dettaglio tecnico**")
         st.dataframe(material_weight_breakdown(top_material), use_container_width=True, hide_index=True)
         st.dataframe(database_weight_breakdown(top_material), use_container_width=True, hide_index=True)
-        st.markdown(
-            "Il motore sceglie prima la classe materiale: 78% caso clinico e 22% seed di classe del database. "
-            "Il restauro resta un envelope operativo secondario."
-        )
-
-    st.markdown("### Affidabilità database")
-    st.dataframe(compact_database_reliability(top_material), use_container_width=True, hide_index=True)
-    with st.expander("Nota completa sulla base dati", expanded=False):
+        st.markdown("**Affidabilità database**")
+        st.dataframe(compact_database_reliability(top_material), use_container_width=True, hide_index=True)
         st.dataframe(database_reliability_table(top_material), use_container_width=True, hide_index=True)
-        st.markdown(
-            "Fonti, verifica e completezza quantitativa arrivano dal database; il profilo clinico della classe è una sintesi interpretativa controllata."
-        )
+        st.caption("La raccomandazione resta material-first: i dati del caso guidano lo score, il database ne calibra la classe e il restauro resta secondario.")
 
-    alert_items = material_risk_alerts(case, idx, top_material, ranked)
-    compact_alerts = compact_alert_items(alert_items, n=3)
-    st.markdown("<div class='premium-panel'><div class='premium-panel-title'>Alert chiave</div><div class='alert-chip-row'>" + ''.join([f"<span class='alert-chip'>{compact_alert_keyword(x)}</span>" for x in compact_alerts]) + "</div></div>", unsafe_allow_html=True)
-    if len(alert_items) > len(compact_alerts):
-        with st.expander("Mostra testo completo degli alert", expanded=False):
-            st.markdown("<ul class='premium-list'>" + ''.join([f"<li>{x}</li>" for x in alert_items]) + "</ul>", unsafe_allow_html=True)
+    with st.expander("Alert clinici completi", expanded=False):
+        st.markdown("<ul class='premium-list'>" + ''.join([f"<li>{x}</li>" for x in alert_items]) + "</ul>", unsafe_allow_html=True)
 
     alt_guidance = alternative_material_guidance(case, idx, ranked)
     if not alt_guidance.empty:
